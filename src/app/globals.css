@@ -3,16 +3,17 @@
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-lavender: #e8e6f5; /* soft lavender */
-  --color-purple: #7c3aed; /* vibrant purple */
-  --color-light-red: #ff8787; /* light red accent */
+  --color-lavender: #e8e6f5;
+  --color-purple: #9d7cff; /* vibrant aesthetic purple */
+  --color-purple-soft: #d2beff; /* throxy pastel purple */
+  --color-light-red: #ff8787;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 :root {
-  --background: #fbfbfb; /* off-white */
-  --foreground: #111111; /* near black */
+  --background: #fdfdfc; /* very warm off-white */
+  --foreground: #352d33; /* throxy warm dark grey */
 }
 
 
