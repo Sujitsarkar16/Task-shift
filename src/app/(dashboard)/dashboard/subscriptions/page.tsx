@@ -2,23 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { CreditCard, Plus, Trash2 } from "lucide-react";
-import { motion, Variants } from "framer-motion";
+import { VoiceInput } from "@/components/voice/VoiceInput";
+import { VOICE_SCHEMAS } from "@/lib/voice/schemas";
 
 export default function SubscriptionsPage() {
   const [subs, setSubs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newSub, setNewSub] = useState({ name: "", amount: 0, billingCycle: "monthly", renewalDate: "" });
-
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
-  };
-  
-  const itemVariants: Variants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
-  };
 
   const fetchSubs = async () => {
     try {
@@ -65,6 +56,35 @@ export default function SubscriptionsPage() {
     }
   };
 
+  const handleVoiceResult = async (result: Record<string, unknown>) => {
+    const name = String(result.name || result.title || "").trim();
+    if (!name) return;
+
+    try {
+      const res = await fetch("/api/subscriptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          amount: Number(result.amount) || 0,
+          billingCycle: result.billingCycle || "monthly",
+          renewalDate: result.renewalDate
+            ? new Date(String(result.renewalDate))
+            : new Date(),
+          status: "active",
+          category: result.category || "software",
+          notes: result.notes || "",
+        }),
+      });
+      if (res.ok) {
+        setShowAddForm(false);
+        fetchSubs();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const deleteSub = async (id: string) => {
     if (!confirm("Delete this subscription?")) return;
     try {
@@ -91,23 +111,36 @@ export default function SubscriptionsPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-12 w-full">
-      <motion.div initial="hidden" animate="visible" variants={containerVariants}>
-        <motion.div variants={itemVariants} className="flex justify-between items-end mb-10">
+      <div>
+        <div className="flex justify-between items-end mb-10">
           <div>
             <h1 className="text-4xl font-bold tracking-tight mb-2">Subscriptions</h1>
             <p className="text-foreground/60 text-lg">Track your recurring expenses.</p>
           </div>
-          <button 
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-lg font-medium hover:bg-purple hover:text-white transition-colors"
-          >
-            <Plus className="w-4 h-4" /> Add Sub
-          </button>
-        </motion.div>
+          <div className="flex items-center gap-3">
+            <VoiceInput
+              schema={VOICE_SCHEMAS.subscription}
+              onResult={handleVoiceResult}
+              label="Creating subscription…"
+            />
+            <button 
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-lg font-medium hover:bg-purple hover:text-white transition-colors"
+            >
+              <Plus className="w-4 h-4" /> Add Sub
+            </button>
+          </div>
+        </div>
 
         {showAddForm && (
-          <motion.form variants={itemVariants} onSubmit={handleAddSub} className="mb-8 bg-white p-6 rounded-xl border-2 border-purple">
+          <form onSubmit={handleAddSub} className="mb-8 bg-white p-6 rounded-xl border-2 border-purple">
             <h3 className="font-bold mb-4">New Subscription</h3>
+            <div className="flex items-center gap-3 mb-4">
+              <VoiceInput schema={VOICE_SCHEMAS.subscription} onResult={handleVoiceResult} size="sm" />
+              <p className="text-sm text-foreground/50">
+                Try: &quot;Add Netflix for $15 monthly renewing next Friday&quot;
+              </p>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <input 
                 type="text" 
@@ -144,25 +177,25 @@ export default function SubscriptionsPage() {
               />
               <button type="submit" className="md:col-span-4 mt-2 px-6 py-2 bg-purple text-white rounded-lg font-bold">Save Subscription</button>
             </div>
-          </motion.form>
+          </form>
         )}
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <motion.div variants={itemVariants} className="bg-white rounded-xl border-2 border-foreground/10 p-6">
+          <div className="bg-white rounded-xl border-2 border-foreground/10 p-6">
             <h3 className="text-foreground/50 font-bold uppercase tracking-widest text-xs mb-2">Total Monthly Spend</h3>
             <p className="text-4xl font-mono font-bold">${totalMonthly.toFixed(2)}</p>
-          </motion.div>
-          <motion.div variants={itemVariants} className="bg-white rounded-xl border-2 border-foreground/10 p-6">
+          </div>
+          <div className="bg-white rounded-xl border-2 border-foreground/10 p-6">
             <h3 className="text-foreground/50 font-bold uppercase tracking-widest text-xs mb-2">Total Yearly Spend</h3>
             <p className="text-4xl font-mono font-bold">${totalYearly.toFixed(2)}</p>
-          </motion.div>
-          <motion.div variants={itemVariants} className="bg-white rounded-xl border-2 border-foreground/10 p-6">
+          </div>
+          <div className="bg-white rounded-xl border-2 border-foreground/10 p-6">
             <h3 className="text-foreground/50 font-bold uppercase tracking-widest text-xs mb-2">Active Subs</h3>
             <p className="text-4xl font-mono font-bold">{subs.length}</p>
-          </motion.div>
+          </div>
         </div>
 
-        <motion.div variants={itemVariants} className="bg-white rounded-xl border-2 border-foreground/10 overflow-hidden">
+        <div className="bg-white rounded-xl border-2 border-foreground/10 overflow-hidden">
           <div className="grid grid-cols-12 gap-4 p-4 border-b-2 border-foreground/5 bg-foreground/5 font-bold text-xs uppercase tracking-widest text-foreground/50">
             <div className="col-span-5">Service</div>
             <div className="col-span-3">Billing Cycle</div>
@@ -200,8 +233,8 @@ export default function SubscriptionsPage() {
               ))}
             </div>
           )}
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </div>
   );
 }

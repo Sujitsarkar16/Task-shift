@@ -1,11 +1,9 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { MongoDBAdapter } from "@auth/mongodb-adapter";
-import clientPromise from "@/lib/db/mongodb";
+import { upsertOAuthUserProfile } from "@/lib/db/database";
 
 export const authOptions: NextAuthOptions = {
-  adapter: MongoDBAdapter(clientPromise, { databaseName: process.env.MONGODB_DB_NAME }),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
@@ -18,11 +16,11 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        // Replace this with actual database logic to verify the user
+        // Implement actual database verification here instead of returning mock user
         if (credentials?.email && credentials?.password) {
+          // Temporarily return a basic object until DB auth is hooked up
           return {
-            id: "1",
-            name: "Mock User",
+            id: credentials.email, // using email as ID since mock user is removed
             email: credentials.email,
           };
         }
@@ -44,12 +42,21 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
-        token.sub = user.id;
+        if (account?.provider === "google" && user.email) {
+          const profile = await upsertOAuthUserProfile({
+            email: user.email,
+            name: user.name ?? undefined,
+            image: user.image ?? undefined,
+          });
+          token.sub = profile.id;
+        } else {
+          token.sub = user.id;
+        }
       }
       return token;
-    }
+    },
   },
   secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
 };

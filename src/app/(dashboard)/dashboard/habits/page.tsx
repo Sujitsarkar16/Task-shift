@@ -1,24 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Activity, Plus, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
-import { motion, Variants } from "framer-motion";
+import { Activity, Plus, Trash2 } from "lucide-react";
+import { VoiceInput } from "@/components/voice/VoiceInput";
+import { VOICE_SCHEMAS } from "@/lib/voice/schemas";
 
 export default function HabitsPage() {
   const [habits, setHabits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newHabitTitle, setNewHabitTitle] = useState("");
-
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
-  };
-  
-  const itemVariants: Variants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
-  };
 
   const fetchHabits = async () => {
     try {
@@ -55,6 +46,31 @@ export default function HabitsPage() {
       });
       if (res.ok) {
         setNewHabitTitle("");
+        setShowAddForm(false);
+        fetchHabits();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleVoiceResult = async (result: Record<string, unknown>) => {
+    const title = String(result.title || "").trim();
+    if (!title) return;
+
+    try {
+      const res = await fetch("/api/habits", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          description: result.description || "",
+          history: [],
+          currentStreak: 0,
+          longestStreak: 0,
+        }),
+      });
+      if (res.ok) {
         setShowAddForm(false);
         fetchHabits();
       }
@@ -106,24 +122,32 @@ export default function HabitsPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-12 w-full">
-      <motion.div initial="hidden" animate="visible" variants={containerVariants}>
-        <motion.div variants={itemVariants} className="flex justify-between items-end mb-10">
+      <div>
+        <div className="flex justify-between items-end mb-10">
           <div>
             <h1 className="text-4xl font-bold tracking-tight mb-2">Habits</h1>
             <p className="text-foreground/60 text-lg">Build consistency and track streaks.</p>
           </div>
-          <button 
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center gap-2 px-4 py-2 bg-purple text-white rounded-lg font-medium hover:bg-purple/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" /> New Habit
-          </button>
-        </motion.div>
+          <div className="flex items-center gap-3">
+            <VoiceInput
+              schema={VOICE_SCHEMAS.habit}
+              onResult={handleVoiceResult}
+              label="Creating habit…"
+            />
+            <button 
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="flex items-center gap-2 px-4 py-2 bg-purple text-white rounded-lg font-medium hover:bg-purple/90 transition-colors"
+            >
+              <Plus className="w-4 h-4" /> New Habit
+            </button>
+          </div>
+        </div>
         
         {showAddForm && (
-          <motion.form variants={itemVariants} onSubmit={handleAddHabit} className="mb-6 bg-white p-6 rounded-xl border-2 border-purple">
+          <form onSubmit={handleAddHabit} className="mb-6 bg-white p-6 rounded-xl border-2 border-purple">
             <h3 className="font-bold mb-4">New Habit</h3>
-            <div className="flex gap-4">
+            <div className="flex gap-4 items-center">
+              <VoiceInput schema={VOICE_SCHEMAS.habit} onResult={handleVoiceResult} size="sm" />
               <input 
                 type="text" 
                 value={newHabitTitle}
@@ -134,10 +158,10 @@ export default function HabitsPage() {
               />
               <button type="submit" className="px-6 py-2 bg-purple text-white rounded-lg font-bold">Save</button>
             </div>
-          </motion.form>
+          </form>
         )}
 
-        <motion.div variants={itemVariants} className="bg-white rounded-xl border-2 border-foreground/10 p-8">
+        <div className="bg-white rounded-xl border-2 border-foreground/10 p-8">
           <div className="flex justify-between items-center mb-8">
             <h2 className="font-bold text-xl">Past 14 Days</h2>
             <div className="flex gap-2 text-foreground/50 text-sm font-bold">
@@ -184,8 +208,8 @@ export default function HabitsPage() {
               })}
             </div>
           )}
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </div>
   );
 }

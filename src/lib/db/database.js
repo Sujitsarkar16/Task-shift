@@ -127,7 +127,24 @@ function getClient() {
 
 export async function getDatabase() {
   const connected = await getClient();
-  return connected.db(getDatabaseName());
+  const db = connected.db(getDatabaseName());
+
+  // Automatically ensure schema and indexes in the background once per server lifecycle
+  if (!global._schemaEnsured) {
+    global._schemaEnsured = true;
+    (async () => {
+      try {
+        for (const collectionName of getSupportedCollections()) {
+          await ensureCollection(db, collectionName);
+        }
+        console.log('[db] Indexes and schema validated successfully');
+      } catch (err) {
+        console.error('[db] Index sync error:', err);
+      }
+    })();
+  }
+
+  return db;
 }
 
 export async function closeDatabase() {
@@ -217,6 +234,46 @@ export async function getDocumentById(collectionName, id) {
   const db = await getDatabase();
   const document = await db.collection(collectionName).findOne({ _id: toObjectId(id) });
   return document ? serializeDocument(document) : null;
+}
+
+export async function upsertOAuthUserProfile({ email, name, image }) {
+  const db = await getDatabase();
+  const now = new Date();
+
+  const set = {
+    updatedAt: now,
+    email,
+  };
+
+  if (name) {
+    set.name = name;
+    set.displayName = name;
+  }
+  if (image) {
+    set.image = image;
+    set.photoURL = image;
+  }
+
+  // Attempt to update existing user by email
+  const result = await db.collection('users').findOneAndUpdate(
+    { email },
+    { $set: set },
+    { returnDocument: 'after', includeResultMetadata: false },
+  );
+
+  if (result) {
+    return serializeDocument(result);
+  }
+
+  // If no user found by email, fallback to create logic
+  return upsertUserProfileDocument({
+    userId: email,
+    email,
+    name,
+    displayName: name,
+    image,
+    photoURL: image,
+  });
 }
 
 export async function upsertUserProfileDocument(payload) {

@@ -2,23 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { NotebookPen, Plus, Search, Trash2, Save } from "lucide-react";
-import { motion, Variants } from "framer-motion";
+import { VoiceInput } from "@/components/voice/VoiceInput";
+import { VOICE_SCHEMAS } from "@/lib/voice/schemas";
 
 export default function NotesPage() {
   const [notes, setNotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeNote, setActiveNote] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
-
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
-  };
-  
-  const itemVariants: Variants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
-  };
 
   const fetchNotes = async () => {
     try {
@@ -51,6 +42,30 @@ export default function NotesPage() {
           content: "",
           type: "text"
         })
+      });
+      if (res.ok) {
+        const newNote = await res.json();
+        setActiveNote(newNote);
+        fetchNotes();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleVoiceResult = async (result: Record<string, unknown>) => {
+    const title = String(result.title || "Voice Note").trim();
+    const content = String(result.content || "").trim();
+
+    try {
+      const res = await fetch("/api/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          content,
+          type: "text",
+        }),
       });
       if (res.ok) {
         const newNote = await res.json();
@@ -97,21 +112,28 @@ export default function NotesPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-12 w-full h-[calc(100vh-theme(spacing.12))] flex flex-col">
-      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="flex flex-col h-full">
-        <motion.div variants={itemVariants} className="flex justify-between items-end mb-8">
+      <div className="flex flex-col h-full">
+        <div className="flex justify-between items-end mb-8">
           <div>
             <h1 className="text-4xl font-bold tracking-tight mb-2">Notes</h1>
             <p className="text-foreground/60 text-lg">Capture your thoughts.</p>
           </div>
-          <button 
-            onClick={handleCreateNote}
-            className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-lg font-medium hover:bg-purple hover:text-white transition-colors"
-          >
-            <Plus className="w-4 h-4" /> New Note
-          </button>
-        </motion.div>
+          <div className="flex items-center gap-3">
+            <VoiceInput
+              schema={VOICE_SCHEMAS.note}
+              onResult={handleVoiceResult}
+              label="Creating note…"
+            />
+            <button 
+              onClick={handleCreateNote}
+              className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-lg font-medium hover:bg-purple hover:text-white transition-colors"
+            >
+              <Plus className="w-4 h-4" /> New Note
+            </button>
+          </div>
+        </div>
         
-        <motion.div variants={itemVariants} className="flex-1 flex gap-6 min-h-0">
+        <div className="flex-1 flex gap-6 min-h-0">
           {/* Notes List */}
           <div className="w-80 flex flex-col bg-white rounded-xl border-2 border-foreground/10 p-4">
             <div className="relative mb-4">
@@ -183,8 +205,8 @@ export default function NotesPage() {
               </div>
             </div>
           )}
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </div>
   );
 }

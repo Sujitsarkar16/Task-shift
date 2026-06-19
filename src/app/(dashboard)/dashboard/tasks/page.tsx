@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CheckCircle2, Plus, Filter, MoreHorizontal, Trash2 } from "lucide-react";
-import { motion, Variants } from "framer-motion";
+import { CheckCircle2, Plus, Filter, Trash2 } from "lucide-react";
+import { VoiceInput } from "@/components/voice/VoiceInput";
+import { VOICE_SCHEMAS } from "@/lib/voice/schemas";
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<any[]>([]);
@@ -10,16 +11,6 @@ export default function TasksPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskPriority, setNewTaskPriority] = useState("medium");
-
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
-  };
-  
-  const itemVariants: Variants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
-  };
 
   const fetchTasks = async () => {
     try {
@@ -87,6 +78,33 @@ export default function TasksPage() {
     }
   };
 
+  const handleVoiceResult = async (result: Record<string, unknown>) => {
+    const title = String(result.title || "").trim();
+    if (!title) return;
+
+    try {
+      const res = await fetch("/api/todos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          priority: result.priority || "medium",
+          deadline: result.deadline ? new Date(String(result.deadline)) : new Date(),
+          category: result.category,
+          reminderDays: result.reminderDays,
+          emailNotification: result.emailNotification ?? false,
+          isCompleted: false,
+        }),
+      });
+      if (res.ok) {
+        setShowAddForm(false);
+        fetchTasks();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "high": return "bg-light-red/20 text-light-red";
@@ -98,13 +116,18 @@ export default function TasksPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-12 w-full">
-      <motion.div initial="hidden" animate="visible" variants={containerVariants}>
-        <motion.div variants={itemVariants} className="flex justify-between items-end mb-10">
+      <div>
+        <div className="flex justify-between items-end mb-10">
           <div>
             <h1 className="text-4xl font-bold tracking-tight mb-2">Tasks</h1>
             <p className="text-foreground/60 text-lg">Manage and prioritize your work.</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
+            <VoiceInput
+              schema={VOICE_SCHEMAS.task}
+              onResult={handleVoiceResult}
+              label="Creating task…"
+            />
             <button className="flex items-center gap-2 px-4 py-2 border-2 border-foreground/10 rounded-lg font-medium hover:bg-foreground/5 transition-colors">
               <Filter className="w-4 h-4" /> Filter
             </button>
@@ -115,12 +138,13 @@ export default function TasksPage() {
               <Plus className="w-4 h-4" /> Add Task
             </button>
           </div>
-        </motion.div>
+        </div>
 
         {showAddForm && (
-          <motion.form variants={itemVariants} onSubmit={handleAddTask} className="mb-6 bg-white p-6 rounded-xl border-2 border-purple">
+          <form onSubmit={handleAddTask} className="mb-6 bg-white p-6 rounded-xl border-2 border-purple">
             <h3 className="font-bold mb-4">New Task</h3>
-            <div className="flex gap-4">
+            <div className="flex gap-4 items-center">
+              <VoiceInput schema={VOICE_SCHEMAS.task} onResult={handleVoiceResult} size="sm" />
               <input 
                 type="text" 
                 value={newTaskTitle}
@@ -140,10 +164,10 @@ export default function TasksPage() {
               </select>
               <button type="submit" className="px-6 py-2 bg-purple text-white rounded-lg font-bold">Save</button>
             </div>
-          </motion.form>
+          </form>
         )}
         
-        <motion.div variants={itemVariants} className="bg-white rounded-xl border-2 border-foreground/10 p-2">
+        <div className="bg-white rounded-xl border-2 border-foreground/10 p-2">
           {loading ? (
             <div className="p-8 text-center text-foreground/50 font-bold">Loading tasks...</div>
           ) : tasks.length === 0 ? (
@@ -168,8 +192,8 @@ export default function TasksPage() {
               ))}
             </div>
           )}
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </div>
   );
 }

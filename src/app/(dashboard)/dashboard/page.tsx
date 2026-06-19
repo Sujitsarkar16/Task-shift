@@ -1,11 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CheckCircle2, Settings, Plus, CreditCard, NotebookPen, Calendar, Activity } from "lucide-react";
-import { motion, Variants } from "framer-motion";
 import Link from "next/link";
+import { useRole, isTeamRole, ROLE_HOME } from "@/contexts/RoleContext";
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const { role, isLoaded } = useRole();
+
+  useEffect(() => {
+    if (isLoaded && isTeamRole(role)) {
+      router.replace(ROLE_HOME[role]);
+    }
+  }, [role, isLoaded, router]);
+
+  if (!isLoaded || isTeamRole(role)) {
+    return null;
+  }
+
+  return <PersonalDashboard />;
+}
+
+function PersonalDashboard() {
   const [data, setData] = useState({
     tasks: [] as any[],
     habits: [] as any[],
@@ -14,38 +32,31 @@ export default function DashboardPage() {
   });
   const [loading, setLoading] = useState(true);
 
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
-  };
-  
-  const itemVariants: Variants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
+  const fetchAllData = async () => {
+    try {
+      const [tasksRes, habitsRes, notesRes, subsRes] = await Promise.all([
+        fetch("/api/todos"),
+        fetch("/api/habits"),
+        fetch("/api/notes"),
+        fetch("/api/subscriptions"),
+      ]);
+
+      const [tasks, habits, notes, subs] = await Promise.all([
+        tasksRes.ok ? tasksRes.json() : [],
+        habitsRes.ok ? habitsRes.json() : [],
+        notesRes.ok ? notesRes.json() : [],
+        subsRes.ok ? subsRes.json() : [],
+      ]);
+
+      setData({ tasks, habits, notes, subs });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    const fetchAllData = async () => {
-      try {
-        const [tasksRes, habitsRes, notesRes, subsRes] = await Promise.all([
-          fetch("/api/todos"),
-          fetch("/api/habits"),
-          fetch("/api/notes"),
-          fetch("/api/subscriptions")
-        ]);
-        
-        setData({
-          tasks: tasksRes.ok ? await tasksRes.json() : [],
-          habits: habitsRes.ok ? await habitsRes.json() : [],
-          notes: notesRes.ok ? await notesRes.json() : [],
-          subs: subsRes.ok ? await subsRes.json() : []
-        });
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchAllData();
   }, []);
 
@@ -69,11 +80,13 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-12 w-full">
-      <motion.div initial="hidden" animate="visible" variants={containerVariants}>
-        <motion.div variants={itemVariants} className="mb-10">
-          <h1 className="text-4xl font-bold tracking-tight mb-2">Good morning, Team.</h1>
-          <p className="text-foreground/60 text-lg">Here is your daily overview.</p>
-        </motion.div>
+      <div>
+        <div className="mb-10 flex justify-between items-end gap-4">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight mb-2">Good morning, Team.</h1>
+            <p className="text-foreground/60 text-lg">Here is your daily overview.</p>
+          </div>
+        </div>
         
         {loading ? (
           <div className="p-12 text-center text-foreground/50 font-bold text-xl">Loading dashboard...</div>
@@ -81,7 +94,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
             
             {/* Weekly Tasks - top wide */}
-            <motion.div variants={itemVariants} className="md:col-span-8 bg-white rounded-xl border-2 border-foreground p-8">
+            <div className="md:col-span-8 bg-white rounded-xl border-2 border-foreground p-8">
               <div className="flex justify-between items-center mb-8">
                 <h2 className="font-bold text-2xl flex items-center gap-2"><Calendar className="w-6 h-6 text-purple" /> Active Tasks</h2>
               </div>
@@ -96,13 +109,15 @@ export default function DashboardPage() {
                   <div className="col-span-2 text-foreground/50 text-sm font-bold">No active tasks. Enjoy your day!</div>
                 )}
               </div>
-            </motion.div>
+            </div>
 
             {/* Habit Tracker - right column top */}
-            <motion.div variants={itemVariants} className="md:col-span-4 bg-purple-soft/30 rounded-xl border-2 border-purple p-8">
+            <div className="md:col-span-4 bg-purple-soft/30 rounded-xl border-2 border-purple p-8">
               <div className="flex justify-between items-center mb-8">
                 <h2 className="font-bold text-2xl flex items-center gap-2"><Activity className="w-6 h-6 text-purple" /> Habits</h2>
-                <Link href="/dashboard/habits" className="text-purple hover:bg-purple/10 p-1 rounded-md transition-colors"><Plus className="w-5 h-5"/></Link>
+                <div className="flex items-center gap-2">
+                  <Link href="/dashboard/habits" className="text-purple hover:bg-purple/10 p-1 rounded-md transition-colors"><Plus className="w-5 h-5"/></Link>
+                </div>
               </div>
               <div className="space-y-6">
                 {data.habits.slice(0, 4).map((habit: any) => {
@@ -118,13 +133,15 @@ export default function DashboardPage() {
                   <div className="text-foreground/50 text-sm font-bold">No habits tracked yet.</div>
                 )}
               </div>
-            </motion.div>
+            </div>
 
             {/* Task Manager - left column bottom */}
-            <motion.div variants={itemVariants} className="md:col-span-5 bg-white rounded-xl border-2 border-foreground/10 p-8 hover:border-foreground/30 transition-colors">
+            <div className="md:col-span-5 bg-white rounded-xl border-2 border-foreground/10 p-8 hover:border-foreground/30 transition-colors">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="font-bold text-2xl flex items-center gap-2"><CheckCircle2 className="w-6 h-6 text-foreground/40" /> Tasks</h2>
-                <Link href="/dashboard/tasks" className="text-sm font-bold text-background bg-foreground px-4 py-2 rounded-lg hover:bg-purple hover:text-white transition-colors">View All</Link>
+                <div className="flex items-center gap-2">
+                  <Link href="/dashboard/tasks" className="text-sm font-bold text-background bg-foreground px-4 py-2 rounded-lg hover:bg-purple hover:text-white transition-colors">View All</Link>
+                </div>
               </div>
               <div className="space-y-3">
                 {data.tasks.slice(0, 4).map((t: any) => (
@@ -139,13 +156,15 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
-            </motion.div>
+            </div>
 
             {/* Notes - middle column bottom */}
-            <motion.div variants={itemVariants} className="md:col-span-4 bg-[#fff9db] rounded-xl border-2 border-[#ffe066] p-8">
+            <div className="md:col-span-4 bg-[#fff9db] rounded-xl border-2 border-[#ffe066] p-8">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="font-bold text-2xl flex items-center gap-2"><NotebookPen className="w-6 h-6 text-[#f59f00]" /> Notes</h2>
-                <Link href="/dashboard/notes" className="text-[#f59f00] hover:bg-[#ffe066]/50 p-1 rounded-md transition-colors"><Settings className="w-5 h-5" /></Link>
+                <div className="flex items-center gap-2">
+                  <Link href="/dashboard/notes" className="text-[#f59f00] hover:bg-[#ffe066]/50 p-1 rounded-md transition-colors"><Settings className="w-5 h-5" /></Link>
+                </div>
               </div>
               <div className="bg-white/60 rounded-lg p-5 h-56 border-2 border-[#ffe066]/40 font-mono text-sm overflow-y-auto leading-relaxed">
                 {data.notes.length > 0 ? (
@@ -157,13 +176,15 @@ export default function DashboardPage() {
                   <p className="text-[#b37400]/50 font-bold">No notes available.</p>
                 )}
               </div>
-            </motion.div>
+            </div>
 
             {/* Subscriptions - right column bottom */}
-            <motion.div variants={itemVariants} className="md:col-span-3 bg-white rounded-xl border-2 border-foreground/10 p-8 hover:border-foreground/30 transition-colors">
+            <div className="md:col-span-3 bg-white rounded-xl border-2 border-foreground/10 p-8 hover:border-foreground/30 transition-colors">
               <div className="flex justify-between items-center mb-8">
                 <h2 className="font-bold text-2xl flex items-center gap-2"><CreditCard className="w-6 h-6 text-foreground/40" /> Subs</h2>
-                <span className="text-sm font-bold text-light-red bg-light-red/10 px-3 py-1 rounded-lg">${totalSubCost.toFixed(2)}/mo</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-light-red bg-light-red/10 px-3 py-1 rounded-lg">${totalSubCost.toFixed(2)}/mo</span>
+                </div>
               </div>
               <div className="space-y-4">
                 {data.subs.slice(0, 4).map((sub: any) => (
@@ -183,11 +204,11 @@ export default function DashboardPage() {
                 )}
               </div>
               <Link href="/dashboard/subscriptions" className="block text-center w-full mt-6 py-3 border-2 border-foreground/10 rounded-lg text-sm font-bold hover:border-foreground/30 hover:bg-[#faf9f8] transition-all">Manage All</Link>
-            </motion.div>
+            </div>
 
           </div>
         )}
-      </motion.div>
+      </div>
     </div>
   );
 }

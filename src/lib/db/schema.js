@@ -1125,6 +1125,41 @@ const collectionDefinitions = {
       return finalizeUpdate(set, unset);
     },
   },
+  tempKeys: {
+    filters: { projectId: 'string' },
+    sortableFields: ['createdAt', 'expiresAt'],
+    defaultSort: { createdAt: -1 },
+    dateFields: ['createdAt', 'updatedAt', 'expiresAt'],
+    validator: baseSchema(['projectId', 'name', 'value', 'expiresAt'], {
+      projectId: stringField(120),
+      name: stringField(160),
+      value: stringField(4000),
+      expiresAt: { bsonType: 'date' },
+    }),
+    indexes: [
+      { key: { projectId: 1, createdAt: -1 }, name: 'project_createdAt' },
+      { key: { expiresAt: 1 }, name: 'temp_keys_ttl', expireAfterSeconds: 0 },
+    ],
+    normalizeCreate(input) {
+      const payload = asPlainObject(input, 'tempKey');
+      return {
+        projectId: asRequiredString(payload.projectId, 'projectId', 120),
+        name: asRequiredString(payload.name, 'name', 160),
+        value: asRequiredString(payload.value, 'value', 4000),
+        expiresAt: asDate(payload.expiresAt, 'expiresAt'),
+      };
+    },
+    normalizeUpdate(input) {
+      const payload = asPlainObject(input, 'tempKey update');
+      const set = {};
+
+      if (hasOwn(payload, 'name')) set.name = asRequiredString(payload.name, 'name', 160);
+      if (hasOwn(payload, 'value')) set.value = asRequiredString(payload.value, 'value', 4000);
+      if (hasOwn(payload, 'expiresAt')) set.expiresAt = asDate(payload.expiresAt, 'expiresAt');
+
+      return finalizeUpdate(set);
+    },
+  },
 };
 
 export function getCollectionDefinition(name) {
