@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     
     // Filter out keys that might have expired but haven't been swept by MongoDB TTL yet
     const now = new Date().getTime();
-    const activeKeys = keys.filter(key => new Date(key.expiresAt).getTime() > now);
+    const activeKeys = keys.filter((key: any) => new Date(key.expiresAt).getTime() > now);
 
     return NextResponse.json(activeKeys);
   } catch (error) {
