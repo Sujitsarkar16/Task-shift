@@ -6,7 +6,7 @@ import { assertProjectOwner } from "@/lib/db/projectAccess";
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -14,7 +14,8 @@ export async function DELETE(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const keyId = params.id;
+    const { id } = await params;
+    const keyId = id;
     if (!keyId) {
       return new NextResponse("Key ID is required", { status: 400 });
     }
