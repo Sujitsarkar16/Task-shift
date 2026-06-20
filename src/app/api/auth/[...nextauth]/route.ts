@@ -3,6 +3,9 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { upsertOAuthUserProfile } from "@/lib/db/database";
 
+// 30 days in seconds — industry standard persistent session length
+const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -33,6 +36,27 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
+    // Cookie persists for 30 days; browser closure does NOT log the user out
+    maxAge: SESSION_MAX_AGE,
+    // Sliding window: reset expiry on every active request
+    updateAge: 24 * 60 * 60,
+  },
+  cookies: {
+    sessionToken: {
+      name:
+        process.env.NODE_ENV === "production"
+          ? "__Secure-next-auth.session-token"
+          : "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        // secure must be true in production so the cookie isn't sent over HTTP
+        secure: process.env.NODE_ENV === "production",
+        // maxAge (not expires) tells the browser to persist the cookie across sessions
+        maxAge: SESSION_MAX_AGE,
+      },
+    },
   },
   callbacks: {
     async session({ session, token }) {

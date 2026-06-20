@@ -7,7 +7,9 @@ import { assertProjectOwner } from "@/lib/db/projectAccess";
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    // @ts-ignore
+    const userId = session?.user?.id || session?.user?.email;
+    if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
@@ -18,7 +20,7 @@ export async function GET(request: Request) {
       return new NextResponse("projectId is required", { status: 400 });
     }
 
-    const hasAccess = await assertProjectOwner(projectId, session.user.email);
+    const hasAccess = await assertProjectOwner(projectId, userId);
     if (!hasAccess) {
       return new NextResponse("Unauthorized", { status: 403 });
     }
@@ -39,7 +41,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    // @ts-ignore
+    const userId = session?.user?.id || session?.user?.email;
+    if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
@@ -50,7 +54,7 @@ export async function POST(request: Request) {
       return new NextResponse("Missing required fields", { status: 400 });
     }
 
-    const hasAccess = await assertProjectOwner(projectId, session.user.email);
+    const hasAccess = await assertProjectOwner(projectId, userId);
     if (!hasAccess) {
       return new NextResponse("Unauthorized", { status: 403 });
     }

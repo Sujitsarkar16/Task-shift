@@ -10,7 +10,9 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    // @ts-ignore
+    const userId = session?.user?.id || session?.user?.email;
+    if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
@@ -25,7 +27,7 @@ export async function DELETE(
       return new NextResponse("Key not found", { status: 404 });
     }
 
-    const hasAccess = await assertProjectOwner(key.projectId, session.user.email);
+    const hasAccess = await assertProjectOwner(key.projectId, userId);
     if (!hasAccess) {
       return new NextResponse("Unauthorized", { status: 403 });
     }

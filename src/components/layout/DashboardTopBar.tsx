@@ -2,6 +2,8 @@
 
 import { RoleSwitcher } from "./RoleSwitcher";
 import { useRole } from "@/contexts/RoleContext";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { QuickCapture } from "@/components/QuickCapture";
 
 const WORKSPACE_LABELS: Record<string, string> = {
   personal: "Personal workspace",
@@ -16,7 +18,11 @@ export function DashboardTopBar() {
       <div className="text-sm font-medium text-foreground/60">
         {WORKSPACE_LABELS[role] ?? "Workspace"}
       </div>
-      <RoleSwitcher />
+      <div className="flex items-center gap-3">
+        <QuickCapture />
+        <NotificationBell />
+        <RoleSwitcher />
+      </div>
     </header>
   );
 }

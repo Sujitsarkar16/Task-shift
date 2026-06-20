@@ -20,6 +20,10 @@ import {
   FileText,
   Compass,
   Key,
+  Sun,
+  Calendar,
+  TrendingUp,
+  Upload,
 } from "lucide-react";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { isTeamRole, ROLE_HOME, useRole } from "@/contexts/RoleContext";
@@ -39,10 +43,14 @@ function getInitials(name?: string | null, email?: string | null) {
 
 const personalLinks = [
   { name: "Overview", href: "/dashboard", icon: Home },
+  { name: "Today", href: "/dashboard/today", icon: Sun },
   { name: "Tasks", href: "/dashboard/tasks", icon: CheckCircle2 },
   { name: "Habits", href: "/dashboard/habits", icon: Activity },
   { name: "Notes", href: "/dashboard/notes", icon: NotebookPen },
+  { name: "Calendar", href: "/dashboard/calendar", icon: Calendar },
   { name: "Subscriptions", href: "/dashboard/subscriptions", icon: CreditCard },
+  { name: "Insights", href: "/dashboard/insights", icon: TrendingUp },
+  { name: "Import", href: "/dashboard/import", icon: Upload },
 ];
 
 const teamSections = [
