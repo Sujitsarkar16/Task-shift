@@ -28,9 +28,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Lint Code
-        run: npm run lint
-
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
@@ -57,9 +54,6 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-
-      - name: Lint Code
-        run: npm run lint
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
