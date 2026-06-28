@@ -1,137 +1,166 @@
 /**
- * Storage adapter router
+ * Storage Adapter Router
  * ──────────────────────
- * Returns a DriveStorageAdapter if the user has connected Google Drive,
- * otherwise falls back to the MongoDB adapter (the existing database.js).
+ * Selects the right storage backend for a given user.
  *
- * The user's Drive tokens are stored in MongoDB (our user collection) because:
- * - MongoDB is always available (the app needs it for auth + workspace data)
- * - We only store Drive tokens in Mongo, NOT the user's actual data
- * - User data goes directly to their Drive if connected
+ * Providers:
+ *   "taskstack" — TaskStack's own MongoDB (default, no config needed)
+ *   "mongodb"   — User's own MongoDB URI
+ *   "supabase"  — User's own Supabase project (URL + key)
+ *   "sqlite"    — Local SQLite file path
+ *   "drive"     — Google Drive (Coming Soon)
+ *   "dropbox"   — Dropbox (Coming Soon)
+ *
+ * Config is stored in the `users` collection in TaskStack's MongoDB
+ * (we always need Mongo for auth/workspace data regardless of user's storage choice).
  */
 
-import { DriveStorageAdapter } from "./DriveStorageAdapter";
 import type { StorageAdapter, StorageDocument } from "./types";
 import { getDatabase } from "@/lib/db/database";
+import {
+  listDocuments, getDocumentById,
+  createDocument, updateDocument, deleteDocument,
+} from "@/lib/db/database";
 
-// ── In-memory adapter cache (per-request-reuse, not cross-request) ─────────
-// Each server-side request creates fresh adapters; the cache just avoids
-// recreating the same adapter multiple times within one request.
-const adapterCache = new WeakMap<object, StorageAdapter>();
-const requestKey   = {};   // replaced by a per-request context in the wrapper
+// ── Types ──────────────────────────────────────────────────────────────────
 
-// ── Token storage helpers ──────────────────────────────────────────────────
+export type StorageProvider = "taskstack" | "mongodb" | "supabase" | "sqlite" | "drive" | "dropbox";
+
+export interface StorageConfig {
+  provider: StorageProvider;
+  // MongoDB
+  mongoUri?:   string;
+  mongoDbName?: string;
+  // Supabase
+  supabaseUrl?: string;
+  supabaseKey?: string;
+  // SQLite
+  sqlitePath?:  string;
+  // Drive tokens (internal)
+  driveAccessToken?:  string;
+  driveRefreshToken?: string;
+  driveTokenExpiresAt?: number;
+}
+
+// ── MongoDB shim (TaskStack's own DB) ──────────────────────────────────────
+
+class MongoStorageAdapter implements StorageAdapter {
+  async list(c: string, f?: Record<string, unknown>) {
+    return (await listDocuments(c, f ?? {})) as StorageDocument[];
+  }
+  async get(c: string, id: string) {
+    return (await getDocumentById(c, id)) as StorageDocument | null;
+  }
+  async create(c: string, data: Record<string, unknown>) {
+    return (await createDocument(c, data)) as StorageDocument;
+  }
+  async update(c: string, id: string, data: Record<string, unknown>) {
+    return (await updateDocument(c, id, data)) as StorageDocument;
+  }
+  async delete(c: string, id: string) {
+    return deleteDocument(c, id);
+  }
+}
+
+const defaultMongoAdapter = new MongoStorageAdapter();
+
+// ── Config persistence ─────────────────────────────────────────────────────
+
+/** Read storage config for a user from MongoDB. */
+export async function getStorageConfig(userId: string): Promise<StorageConfig> {
+  const db   = await getDatabase();
+  const user = await db.collection("users").findOne(
+    { $or: [{ userId }, { _id: userId as any }] },
+    { projection: { storageConfig: 1 } },
+  );
+  return (user?.storageConfig as StorageConfig) ?? { provider: "taskstack" };
+}
+
+/** Save storage config for a user. */
+export async function saveStorageConfig(userId: string, config: StorageConfig): Promise<void> {
+  const db = await getDatabase();
+  await db.collection("users").updateOne(
+    { $or: [{ userId }, { _id: userId as any }] },
+    { $set: { storageConfig: config, updatedAt: new Date() } },
+  );
+}
+
+/** Remove storage config (reset to TaskStack default). */
+export async function removeStorageConfig(userId: string): Promise<void> {
+  const db = await getDatabase();
+  await db.collection("users").updateOne(
+    { $or: [{ userId }, { _id: userId as any }] },
+    { $unset: { storageConfig: "" }, $set: { updatedAt: new Date() } },
+  );
+}
+
+// ── Legacy Drive token helpers (backwards compat) ─────────────────────────
 
 export interface DriveTokens {
   accessToken:  string;
   refreshToken: string;
-  expiresAt?:   number;   // Unix ms
+  expiresAt?:   number;
 }
 
-/** Read stored Drive tokens for a user from MongoDB. */
 export async function getDriveTokens(userId: string): Promise<DriveTokens | null> {
-  const db   = await getDatabase();
-  const user = await db.collection("users").findOne(
-    { $or: [{ userId }, { _id: userId as any }] },
-    { projection: { driveAccessToken: 1, driveRefreshToken: 1, driveTokenExpiresAt: 1 } },
-  );
-  if (!user?.driveAccessToken) return null;
+  const config = await getStorageConfig(userId);
+  if (config.provider !== "drive" || !config.driveAccessToken) return null;
   return {
-    accessToken:  user.driveAccessToken,
-    refreshToken: user.driveRefreshToken,
-    expiresAt:    user.driveTokenExpiresAt,
+    accessToken:  config.driveAccessToken,
+    refreshToken: config.driveRefreshToken ?? "",
+    expiresAt:    config.driveTokenExpiresAt,
   };
 }
 
-/** Persist Drive tokens for a user to MongoDB. */
 export async function saveDriveTokens(userId: string, tokens: DriveTokens): Promise<void> {
-  const db = await getDatabase();
-  await db.collection("users").updateOne(
-    { $or: [{ userId }, { _id: userId as any }] },
-    {
-      $set: {
-        driveAccessToken:    tokens.accessToken,
-        driveRefreshToken:   tokens.refreshToken,
-        driveTokenExpiresAt: tokens.expiresAt,
-        driveConnectedAt:    new Date(),
-        updatedAt:           new Date(),
-      },
-    },
-  );
+  await saveStorageConfig(userId, {
+    provider:             "drive",
+    driveAccessToken:     tokens.accessToken,
+    driveRefreshToken:    tokens.refreshToken,
+    driveTokenExpiresAt:  tokens.expiresAt,
+  });
 }
 
-/** Remove Drive tokens — disconnects Drive for a user. */
 export async function removeDriveTokens(userId: string): Promise<void> {
-  const db = await getDatabase();
-  await db.collection("users").updateOne(
-    { $or: [{ userId }, { _id: userId as any }] },
-    {
-      $unset: {
-        driveAccessToken:    "",
-        driveRefreshToken:   "",
-        driveTokenExpiresAt: "",
-        driveConnectedAt:    "",
-      },
-      $set: { updatedAt: new Date() },
-    },
-  );
+  await removeStorageConfig(userId);
 }
 
-/** Check if a user has Drive connected. */
-export async function isDriveConnected(userId: string): Promise<boolean> {
-  const tokens = await getDriveTokens(userId);
-  return tokens !== null;
-}
-
-// ── MongoDB shim adapter ───────────────────────────────────────────────────
-// Wraps the existing database.js functions so they conform to StorageAdapter.
-
-import {
-  listDocuments,
-  getDocumentById,
-  createDocument,
-  updateDocument,
-  deleteDocument,
-} from "@/lib/db/database";
-
-class MongoStorageAdapter implements StorageAdapter {
-  async list(collection: string, filter?: Record<string, unknown>): Promise<StorageDocument[]> {
-    const docs = await listDocuments(collection, filter ?? {});
-    return docs as StorageDocument[];
-  }
-
-  async get(collection: string, id: string): Promise<StorageDocument | null> {
-    const doc = await getDocumentById(collection, id);
-    return doc as StorageDocument | null;
-  }
-
-  async create(collection: string, data: Record<string, unknown>): Promise<StorageDocument> {
-    const doc = await createDocument(collection, data);
-    return doc as StorageDocument;
-  }
-
-  async update(collection: string, id: string, data: Record<string, unknown>): Promise<StorageDocument> {
-    const doc = await updateDocument(collection, id, data);
-    return doc as StorageDocument;
-  }
-
-  async delete(collection: string, id: string): Promise<{ id: string }> {
-    return deleteDocument(collection, id);
-  }
-}
-
-// Singleton MongoDB adapter
-const mongoAdapter = new MongoStorageAdapter();
-
-// ── Public API ─────────────────────────────────────────────────────────────
+// ── Main adapter factory ───────────────────────────────────────────────────
 
 /**
- * Returns the correct StorageAdapter for a given userId.
- * - If Drive is connected: DriveStorageAdapter (user's own Google Drive)
- * - Otherwise: MongoStorageAdapter (TaskStack's MongoDB)
+ * Returns the correct StorageAdapter for a user.
+ * Falls back to TaskStack's MongoDB if no custom storage is configured.
  */
 export async function getStorageAdapter(userId: string): Promise<StorageAdapter> {
-  const tokens = await getDriveTokens(userId);
-  if (!tokens) return mongoAdapter;
-  return new DriveStorageAdapter(tokens.accessToken, tokens.refreshToken);
+  const config = await getStorageConfig(userId);
+
+  switch (config.provider) {
+    case "mongodb": {
+      if (!config.mongoUri) return defaultMongoAdapter;
+      const { MongoCustomAdapter } = await import("./MongoCustomAdapter");
+      return new MongoCustomAdapter(config.mongoUri, config.mongoDbName ?? "taskstack");
+    }
+
+    case "supabase": {
+      if (!config.supabaseUrl || !config.supabaseKey) return defaultMongoAdapter;
+      const { SupabaseStorageAdapter } = await import("./SupabaseStorageAdapter");
+      return new SupabaseStorageAdapter(config.supabaseUrl, config.supabaseKey);
+    }
+
+    case "sqlite": {
+      if (!config.sqlitePath) return defaultMongoAdapter;
+      const { SQLiteStorageAdapter } = await import("./SQLiteStorageAdapter");
+      return new SQLiteStorageAdapter(config.sqlitePath);
+    }
+
+    case "drive": {
+      if (!config.driveAccessToken) return defaultMongoAdapter;
+      const { DriveStorageAdapter } = await import("./DriveStorageAdapter");
+      return new DriveStorageAdapter(config.driveAccessToken, config.driveRefreshToken);
+    }
+
+    case "taskstack":
+    default:
+      return defaultMongoAdapter;
+  }
 }
