@@ -15,7 +15,7 @@ export function DashboardTopBar() {
   const { role } = useRole();
 
   return (
-    <header className="sticky top-0 z-40 border-b-2 border-foreground/10 bg-[#fdfdfc] px-4 md:px-6 py-3 flex items-center justify-between gap-3">
+    <header className="sticky top-0 z-40 border-b border-foreground/8 bg-white/80 backdrop-blur-md px-4 md:px-6 py-3 flex items-center justify-between gap-3 shadow-sm">
       {/* Left: hamburger (mobile) + workspace label */}
       <div className="flex items-center gap-3">
         <MobileNav />

@@ -3,24 +3,42 @@
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-lavender: #e8e6f5;
-  --color-purple: #9d7cff; /* vibrant aesthetic purple */
-  --color-purple-soft: #d2beff; /* throxy pastel purple */
-  --color-light-red: #ff8787;
+
+  /* ── Core brand ── */
+  --color-lavender:    #e8e6f5;
+  --color-purple:      #7c5cfc;   /* richer indigo-purple */
+  --color-purple-soft: #ede8ff;   /* light tint */
+  --color-purple-mid:  #c4b5fd;   /* mid tone */
+
+  /* ── Section accent palette ── */
+  --color-task:        #3b82f6;   /* blue   — tasks */
+  --color-task-soft:   #eff6ff;
+  --color-habit:       #f97316;   /* orange — habits */
+  --color-habit-soft:  #fff7ed;
+  --color-note:        #eab308;   /* yellow — notes */
+  --color-note-soft:   #fefce8;
+  --color-sub:         #10b981;   /* emerald — subscriptions */
+  --color-sub-soft:    #ecfdf5;
+  --color-insight:     #8b5cf6;   /* violet — insights */
+  --color-insight-soft:#f5f3ff;
+  --color-cal:         #06b6d4;   /* cyan — calendar */
+  --color-cal-soft:    #ecfeff;
+  --color-danger:      #ef4444;
+  --color-danger-soft: #fef2f2;
+
+  /* ── Semantic ── */
+  --color-light-red: #f87171;
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 :root {
-  --background: #fdfdfc; /* very warm off-white */
-  --foreground: #352d33; /* throxy warm dark grey */
+  --background: #f8f7ff;   /* very subtle lavender tint */
+  --foreground: #1e1b2e;   /* deep rich dark */
 }
 
-
-
-html {
-  scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
 body {
   background: var(--background);
@@ -29,3 +47,35 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Page-level gradient backgrounds */
+.bg-page-gradient {
+  background: linear-gradient(135deg, #f8f7ff 0%, #f0ebff 50%, #f8f7ff 100%);
+}
+
+/* Animated gradient for hero elements */
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 6s ease infinite;
+}
+
+/* Glass card effect */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+/* Subtle inner glow on stat cards */
+.card-glow-purple { box-shadow: 0 0 0 1px rgba(124, 92, 252, 0.15), 0 4px 24px rgba(124, 92, 252, 0.08); }
+.card-glow-blue   { box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.15), 0 4px 24px rgba(59, 130, 246, 0.08); }
+.card-glow-orange { box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.15), 0 4px 24px rgba(249, 115, 22, 0.08); }
+.card-glow-green  { box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.15), 0 4px 24px rgba(16, 185, 129, 0.08); }
+.card-glow-red    { box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.2),   0 4px 24px rgba(239, 68, 68, 0.1); }

@@ -12,7 +12,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     <SWRProvider>
       <ToastProvider>
         <RoleProvider>
-          <div className="flex min-h-screen bg-[#faf9f8]">
+          <div className="flex min-h-screen bg-background">
             <Sidebar />
             <div className="flex-1 flex flex-col min-w-0">
               <DashboardTopBar />

@@ -83,41 +83,50 @@ export default function HabitsPage() {
   const totalCompleted = habits.filter((h) => h.history.includes(todayStr)).length;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 md:py-12 w-full">
-      <div className="flex justify-between items-end mb-8 md:mb-10 flex-wrap gap-4">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-2">Habits</h1>
-          <p className="text-foreground/60">Build consistency, one day at a time.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <VoiceInput schema={VOICE_SCHEMAS.habit} onResult={handleVoiceResult} label="Creating habit…" />
-          <button onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center gap-2 px-4 py-2 bg-purple text-white rounded-lg font-medium hover:bg-purple/90 transition-colors text-sm">
-            <Plus className="w-4 h-4" /> New Habit
-          </button>
+    <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 w-full">
+
+      {/* ── Colorful header ── */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-400 via-orange-500 to-rose-500 p-5 md:p-6 mb-6 text-white shadow-lg shadow-orange-200">
+        <div className="absolute -top-4 -right-4 w-28 h-28 rounded-full bg-white/10" />
+        <div className="absolute -bottom-6 left-8 w-20 h-20 rounded-full bg-white/10" />
+        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                <Flame className="w-4 h-4 text-white" />
+              </div>
+              <h1 className="text-2xl font-extrabold">Habits</h1>
+            </div>
+            <p className="text-white/70 text-sm">Build consistency, one day at a time.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <VoiceInput schema={VOICE_SCHEMAS.habit} onResult={handleVoiceResult} label="Creating habit…" />
+            <button onClick={() => setShowAddForm(!showAddForm)}
+              className="flex items-center gap-2 px-4 py-2 bg-white text-orange-600 rounded-xl font-bold text-sm hover:bg-orange-50 transition-colors">
+              <Plus className="w-4 h-4" /> New Habit
+            </button>
+          </div>
         </div>
       </div>
-
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 md:gap-4 mb-8">
-        <div className="bg-white rounded-xl border-2 border-foreground/10 p-4 md:p-5">
+      <div className="grid grid-cols-3 gap-3 md:gap-4 mb-6">
+        <div className="bg-white rounded-2xl border border-orange-100 p-4 md:p-5 shadow-sm">
           <p className="text-xs font-bold uppercase tracking-widest text-foreground/40 mb-1">Today</p>
-          <p className="text-2xl md:text-3xl font-bold font-mono">
+          <p className="text-2xl md:text-3xl font-extrabold">
             {totalCompleted}<span className="text-foreground/30 text-lg">/{habits.length}</span>
           </p>
           <p className="text-xs text-foreground/50 mt-1">completed</p>
         </div>
-        <div className="bg-white rounded-xl border-2 border-foreground/10 p-4 md:p-5">
+        <div className="bg-white rounded-2xl border border-yellow-100 p-4 md:p-5 shadow-sm">
           <p className="text-xs font-bold uppercase tracking-widest text-foreground/40 mb-1">Best</p>
-          <p className="text-2xl md:text-3xl font-bold font-mono flex items-center gap-1">
+          <p className="text-2xl md:text-3xl font-extrabold flex items-center gap-1">
             <Trophy className="w-5 h-5 text-yellow-500" />
             {isLoading ? "—" : Math.max(0, ...habits.map((h) => h.longestStreak))}d
           </p>
         </div>
-        <div className="bg-white rounded-xl border-2 border-foreground/10 p-4 md:p-5">
-          <p className="text-xs font-bold uppercase tracking-widest text-foreground/40 mb-1">On fire</p>
-          <p className="text-2xl md:text-3xl font-bold font-mono flex items-center gap-1">
-            <Flame className="w-5 h-5 text-orange-500" />
+        <div className="bg-white rounded-2xl border border-orange-100 p-4 md:p-5 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-widest text-foreground/40 mb-1">On fire 🔥</p>
+          <p className="text-2xl md:text-3xl font-extrabold text-orange-500">
             {isLoading ? "—" : habits.filter((h) => h.currentStreak > 0).length}
           </p>
         </div>
