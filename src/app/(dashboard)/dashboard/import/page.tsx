@@ -128,18 +128,20 @@ export default function ImportPage() {
     let success = 0;
     let failed = 0;
 
-    for (const item of raw) {
-      try {
-        const res = await fetch(endpoint, {
+    // Batch with Promise.allSettled — parallel, not sequential
+    const results = await Promise.allSettled(
+      raw.map((item) =>
+        fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(item),
-        });
-        if (res.ok) success++;
-        else failed++;
-      } catch {
-        failed++;
-      }
+        })
+      )
+    );
+
+    for (const result of results) {
+      if (result.status === "fulfilled" && result.value.ok) success++;
+      else failed++;
     }
 
     setResult({ success, failed });
