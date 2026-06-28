@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "taskshift. | The Editorial Task Manager",
-  description: "A functional, minimalist approach to project management.",
+  title: "TaskStack | Stack Your Day, Ship Your Work",
+  description: "The all-in-one productivity platform for tasks, habits, notes, subscriptions and team collaboration.",
 };
 
 export default function RootLayout({

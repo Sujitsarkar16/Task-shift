@@ -35,10 +35,10 @@ export default function Home() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-purple"></span>
             </span>
-            Taskshift v2.0 is live
+            TaskStack v2.0 is live
           </motion.span>
           <motion.h1 variants={itemVariants} className="text-5xl md:text-7xl font-bold tracking-tighter leading-[1.05] mb-6">
-            Focus on what matters. <span className="text-foreground/30">Ignore the rest.</span>
+            Stack your day. <span className="text-foreground/30">Ship your work.</span>
           </motion.h1>
           <motion.p variants={itemVariants} className="text-lg md:text-xl text-foreground/70 mb-10 leading-relaxed max-w-lg">
             A radically simplified task management tool designed for researchers, students, IT employees, developers, and daily automation. For everyone who values execution over complex workflows.
@@ -67,7 +67,7 @@ export default function Home() {
               <div className="w-3 h-3 rounded-full bg-green-400 border border-foreground/20"></div>
             </div>
             <div className="h-6 w-48 bg-foreground/5 rounded-md border border-foreground/10 flex items-center px-2">
-              <span className="text-[10px] font-mono text-foreground/40">app.taskshift.com/board</span>
+              <span className="text-[10px] font-mono text-foreground/40">app.taskstack.app/board</span>
             </div>
           </div>
           
@@ -186,7 +186,7 @@ export default function Home() {
           className="max-w-4xl mx-auto px-6 text-center flex flex-col items-center relative z-10"
         >
           <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-8 text-white">
-            Ready to shift gears?
+            Ready to stack up?
           </h2>
           <p className="text-xl text-background/80 mb-12 max-w-2xl">
             Stop managing work and start doing it. Join the waitlist for early access.

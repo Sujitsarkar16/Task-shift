@@ -12,7 +12,7 @@ type RoleContextValue = {
 
 const RoleContext = createContext<RoleContextValue | null>(null);
 
-const STORAGE_KEY = "taskshift-usecase-role";
+const STORAGE_KEY = "taskstack-usecase-role";
 
 const VALID_ROLES: UserRole[] = [
   "personal",

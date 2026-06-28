@@ -42,10 +42,10 @@ export function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-3xl shadow-xl border border-zinc-100 dark:border-zinc-800 p-8 sm:p-10 transition-all duration-300">
+    <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-foreground/10 p-8 sm:p-10">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">Welcome back</h2>
-        <p className="text-zinc-500 dark:text-zinc-400 mt-2 text-sm">Enter your details to access your account.</p>
+        <h2 className="text-3xl font-bold tracking-tight">Welcome back</h2>
+        <p className="text-foreground/50 mt-2 text-sm">Sign in to your TaskStack account.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">

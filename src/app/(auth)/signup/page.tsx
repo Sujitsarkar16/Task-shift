@@ -1,28 +1,26 @@
 import { SignupForm } from "@/components/auth/SignupForm";
 import { Metadata } from "next";
 import Link from "next/link";
-import { CheckCircle2 } from "lucide-react";
+import { TaskStackLogo } from "@/components/ui/TaskStackLogo";
 
 export const metadata: Metadata = {
-  title: "Sign Up - TaskShift",
-  description: "Create a new TaskShift account",
+  title: "Sign Up — TaskStack",
+  description: "Create your free TaskStack account",
 };
 
 export default function SignupPage() {
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Background decorations */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
-        <div className="absolute -top-[25%] -right-[10%] w-[50%] h-[50%] rounded-full bg-indigo-500/10 dark:bg-indigo-500/5 blur-3xl" />
-        <div className="absolute bottom-[20%] -left-[10%] w-[40%] h-[40%] rounded-full bg-blue-500/10 dark:bg-blue-500/5 blur-3xl" />
+    <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Gradient blobs */}
+      <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
+        <div className="absolute -top-32 -right-16 w-96 h-96 rounded-full bg-purple/10 blur-3xl" />
+        <div className="absolute bottom-1/4 -left-16 w-80 h-80 rounded-full bg-violet-400/10 blur-3xl" />
       </div>
 
+      {/* Logo */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md mb-8 flex justify-center">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="bg-indigo-600 p-2 rounded-xl group-hover:bg-indigo-700 transition-colors">
-            <CheckCircle2 className="w-6 h-6 text-white" />
-          </div>
-          <span className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">TaskShift</span>
+        <Link href="/">
+          <TaskStackLogo size={40} />
         </Link>
       </div>
 

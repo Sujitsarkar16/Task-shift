@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Menu, X, CheckCircle2, Home, Sun, Activity, NotebookPen,
+  Menu, X, Home, Sun, Activity, NotebookPen,
   Calendar, CreditCard, TrendingUp, Upload, Settings,
   LayoutGrid, BarChart3, Map, ListOrdered, FileText, Compass, Key,
-  FlaskConical, Rocket, Users,
+  FlaskConical, Rocket, Users, CheckSquare2, CheckCircle2,
 } from "lucide-react";
 import { isTeamRole, ROLE_HOME, useRole } from "@/contexts/RoleContext";
+import { TaskStackLogoFull } from "@/components/ui/TaskStackLogo";
 
 const personalLinks = [
   { name: "Overview", href: "/dashboard", icon: Home },
@@ -82,10 +83,7 @@ export function MobileNav() {
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-foreground/10">
           <Link href={teamMode ? ROLE_HOME[role] : "/dashboard"} className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-foreground text-background rounded-lg flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-            <span className="font-bold text-xl tracking-tighter">taskshift.</span>
+            <TaskStackLogoFull size={28} />
           </Link>
           <button
             onClick={() => setOpen(false)}

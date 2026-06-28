@@ -9,9 +9,10 @@ import {
   CreditCard, LayoutGrid, FlaskConical, Rocket,
   BarChart3, Map, ListOrdered, FileText, Compass,
   Key, SunMedium, CalendarDays, TrendingUp, Upload,
-  LogOut, Zap, Users,
+  Users,
 } from "lucide-react";
 import { isTeamRole, ROLE_HOME, useRole } from "@/contexts/RoleContext";
+import { TaskStackLogoFull } from "@/components/ui/TaskStackLogo";
 
 function getInitials(name?: string | null, email?: string | null) {
   if (name) return name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
@@ -101,15 +102,7 @@ export function Sidebar() {
           href={teamMode ? ROLE_HOME[role] : "/dashboard"}
           className="flex items-center gap-3 group"
         >
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple to-violet-400 flex items-center justify-center shadow-md shadow-purple/30 group-hover:scale-105 transition-transform">
-            <Zap className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-purple to-violet-500 bg-clip-text text-transparent">
-              taskshift
-            </span>
-            <span className="text-foreground/30 text-xs block leading-none">workspace</span>
-          </div>
+          <TaskStackLogoFull size={30} />
         </Link>
       </div>
 
