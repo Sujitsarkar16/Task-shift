@@ -9,7 +9,7 @@ import {
   CreditCard, LayoutGrid, FlaskConical, Rocket,
   BarChart3, Map, ListOrdered, FileText, Compass,
   Key, SunMedium, CalendarDays, TrendingUp, Upload,
-  LogOut, Zap,
+  LogOut, Zap, Users,
 } from "lucide-react";
 import { isTeamRole, ROLE_HOME, useRole } from "@/contexts/RoleContext";
 
@@ -29,6 +29,7 @@ const NAV_COLORS: Record<string, [string, string, string, string]> = {
   "/dashboard/calendar":     ["bg-cyan-100",    "text-cyan-600",   "bg-cyan-50",    "border-cyan-200"],
   "/dashboard/subscriptions":["bg-emerald-100", "text-emerald-600","bg-emerald-50", "border-emerald-200"],
   "/dashboard/insights":     ["bg-purple-100",  "text-purple-600", "bg-purple-50",  "border-purple-200"],
+  "/dashboard/collaborate":  ["bg-violet-100",  "text-violet-600", "bg-violet-50",  "border-violet-200"],
   "/dashboard/import":       ["bg-pink-100",    "text-pink-600",   "bg-pink-50",    "border-pink-200"],
 };
 
@@ -41,6 +42,7 @@ const personalLinks = [
   { name: "Calendar",       href: "/dashboard/calendar",       icon: CalendarDays },
   { name: "Subscriptions",  href: "/dashboard/subscriptions",  icon: CreditCard },
   { name: "Insights",       href: "/dashboard/insights",       icon: TrendingUp },
+  { name: "Collaborate",    href: "/dashboard/collaborate",    icon: Users },
   { name: "Import",         href: "/dashboard/import",         icon: Upload },
 ];
 

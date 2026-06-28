@@ -7,7 +7,7 @@ import {
   Menu, X, CheckCircle2, Home, Sun, Activity, NotebookPen,
   Calendar, CreditCard, TrendingUp, Upload, Settings,
   LayoutGrid, BarChart3, Map, ListOrdered, FileText, Compass, Key,
-  FlaskConical, Rocket,
+  FlaskConical, Rocket, Users,
 } from "lucide-react";
 import { isTeamRole, ROLE_HOME, useRole } from "@/contexts/RoleContext";
 
@@ -20,6 +20,7 @@ const personalLinks = [
   { name: "Calendar", href: "/dashboard/calendar", icon: Calendar },
   { name: "Subscriptions", href: "/dashboard/subscriptions", icon: CreditCard },
   { name: "Insights", href: "/dashboard/insights", icon: TrendingUp },
+  { name: "Collaborate", href: "/dashboard/collaborate", icon: Users },
   { name: "Import", href: "/dashboard/import", icon: Upload },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
