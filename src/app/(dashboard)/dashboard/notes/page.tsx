@@ -12,6 +12,7 @@ import { VOICE_SCHEMAS } from "@/lib/voice/schemas";
 import { useNotes, type Note } from "@/hooks/useNotes";
 import { SkeletonNoteItem } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
+import { resolveCanvasElements } from "@/lib/notes/canvas";
 
 const AUTOSAVE_DELAY = 1200;
 const CANVAS_SIZE = 2400;
@@ -78,9 +79,11 @@ export default function NotesPage() {
 
   // A selected draft wins over the latest SWR list; otherwise open the newest note.
   const currentNote = activeNote ?? notes[0] ?? null;
-  const canvasElements = canvasState?.noteId === currentNote?.id
-    ? canvasState.elements
-    : currentNote?.type === "whiteboard" ? readCanvas(currentNote) : [];
+  const canvasElements = resolveCanvasElements(
+    canvasState,
+    currentNote?.id,
+    currentNote?.type === "whiteboard" ? readCanvas(currentNote) : [],
+  );
 
   const saveNote = async (note: Note) => {
     if (note.id.startsWith("tmp-")) return;
