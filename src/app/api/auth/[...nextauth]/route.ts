@@ -2,14 +2,15 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { upsertOAuthUserProfile } from "@/lib/db/database";
+import { consumeRateLimit, getClientIp, getSessionRateLimitIdentifier } from "@/lib/security/rateLimit";
 
 // ── Session & token lifetimes ──────────────────────────────────────────────
-// JWT lives for 24 h from the last activity.
-// The cookie is persistent (maxAge = 24 h); the browser keeps it across
-// restarts, but it expires exactly 24 h after the last sign-in unless the
+// JWT lives for seven days from the last activity.
+// The cookie is persistent (maxAge = seven days); the browser keeps it across
+// restarts, but it expires exactly seven days after the last sign-in unless the
 // user manually logs out first.
-const SESSION_MAX_AGE    = 24 * 60 * 60;     // 24 h (seconds)
-const JWT_MAX_AGE        = 24 * 60 * 60;     // JWT matches session
+const SESSION_MAX_AGE    = 7 * 24 * 60 * 60; // 7 days (seconds)
+const JWT_MAX_AGE        = 7 * 24 * 60 * 60; // JWT matches session
 const SESSION_UPDATE_AGE = 30 * 60;           // refresh cookie every 30 min of activity
 
 export const authOptions: NextAuthOptions = {
@@ -119,4 +120,58 @@ export const authOptions: NextAuthOptions = {
 };
 
 const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };
+
+function tooManyRequests(retryAfterSeconds: number) {
+  return Response.json(
+    { error: "Too many authentication requests. Please try again later." },
+    { status: 429, headers: { "Retry-After": String(retryAfterSeconds), "Cache-Control": "no-store" } },
+  );
+}
+
+async function enforceAuthRateLimit(request: Request) {
+  const { pathname } = new URL(request.url);
+
+  // This endpoint is where NextAuth refreshes the session cookie.
+  if (request.method === "GET" && pathname.endsWith("/session")) {
+    const result = await consumeRateLimit({
+      scope: "session-refresh",
+      identifier: getSessionRateLimitIdentifier(request.headers),
+      limit: 60,
+      windowMs: 60_000,
+    });
+    return result.allowed ? null : tooManyRequests(result.retryAfterSeconds);
+  }
+
+  if (request.method === "POST" && pathname.endsWith("/callback/credentials")) {
+    const formData = await request.clone().formData();
+    const email = String(formData.get("email") || "").trim().toLowerCase();
+    const ip = getClientIp(request.headers);
+    const limits = await Promise.all([
+      consumeRateLimit({ scope: "credential-sign-in-ip", identifier: `ip:${ip}`, limit: 10, windowMs: 15 * 60_000 }),
+      consumeRateLimit({ scope: "credential-sign-in-account", identifier: `ip:${ip}:email:${email}`, limit: 5, windowMs: 15 * 60_000 }),
+    ]);
+    const blocked = limits.find((result) => !result.allowed);
+    return blocked ? tooManyRequests(blocked.retryAfterSeconds) : null;
+  }
+
+  return null;
+}
+
+export async function GET(request: Request) {
+  try {
+    const blocked = await enforceAuthRateLimit(request);
+    return blocked || handler(request as any);
+  } catch {
+    // Authentication endpoints fail closed if the distributed limiter is unavailable.
+    return Response.json({ error: "Authentication is temporarily unavailable." }, { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const blocked = await enforceAuthRateLimit(request);
+    return blocked || handler(request as any);
+  } catch {
+    return Response.json({ error: "Authentication is temporarily unavailable." }, { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
+}

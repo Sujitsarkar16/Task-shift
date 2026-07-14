@@ -26,6 +26,7 @@
 import { google } from "googleapis";
 import type { StorageAdapter, StorageDocument } from "./types";
 import { getDatabase } from "@/lib/db/database";
+import { consumeRateLimit } from "@/lib/security/rateLimit";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -45,8 +46,26 @@ function err404(): never {
 
 // ── OAuth2 client factory ──────────────────────────────────────────────────
 
+class RateLimitedOAuth2Client extends google.auth.OAuth2 {
+  protected override async refreshTokenNoCache(refreshToken?: string | null) {
+    const result = await consumeRateLimit({
+      scope: "drive-access-token-refresh",
+      identifier: `refresh-token:${refreshToken || "missing"}`,
+      limit: 12,
+      windowMs: 60 * 60_000,
+    });
+    if (!result.allowed) {
+      const error = new Error("Google Drive token refresh rate limit exceeded.");
+      (error as Error & { status?: number; retryAfterSeconds?: number }).status = 429;
+      (error as Error & { status?: number; retryAfterSeconds?: number }).retryAfterSeconds = result.retryAfterSeconds;
+      throw error;
+    }
+    return super.refreshTokenNoCache(refreshToken);
+  }
+}
+
 function makeOAuth2Client(accessToken: string, refreshToken?: string) {
-  const client = new google.auth.OAuth2(
+  const client = new RateLimitedOAuth2Client(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
     `${process.env.NEXTAUTH_URL}/api/auth/callback/google`,

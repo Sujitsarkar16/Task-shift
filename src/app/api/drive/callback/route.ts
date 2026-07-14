@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
 import { saveDriveTokens } from "@/lib/storage/adapterRouter";
+import { consumeRateLimit, getClientIp } from "@/lib/security/rateLimit";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -18,6 +19,20 @@ export async function GET(request: Request) {
     return NextResponse.redirect(
       `${process.env.NEXTAUTH_URL}/dashboard/settings?drive=error`,
     );
+  }
+
+  try {
+    const result = await consumeRateLimit({
+      scope: "drive-token-exchange",
+      identifier: `ip:${getClientIp(request.headers)}`,
+      limit: 10,
+      windowMs: 10 * 60_000,
+    });
+    if (!result.allowed) {
+      return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/dashboard/settings?drive=rate-limited`);
+    }
+  } catch {
+    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/dashboard/settings?drive=error`);
   }
 
   try {

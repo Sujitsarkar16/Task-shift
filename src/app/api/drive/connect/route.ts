@@ -7,12 +7,30 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import { google } from "googleapis";
+import { consumeRateLimit, getClientIp } from "@/lib/security/rateLimit";
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   // @ts-ignore
   const userId = session?.user?.id || session?.user?.email;
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  try {
+    const result = await consumeRateLimit({
+      scope: "drive-token-connect",
+      identifier: `user:${userId}:ip:${getClientIp(request.headers)}`,
+      limit: 5,
+      windowMs: 60 * 60_000,
+    });
+    if (!result.allowed) {
+      return NextResponse.json(
+        { error: "Too many Drive connection attempts. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(result.retryAfterSeconds), "Cache-Control": "no-store" } },
+      );
+    }
+  } catch {
+    return NextResponse.json({ error: "Drive connection is temporarily unavailable." }, { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
 
   const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
